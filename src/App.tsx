@@ -75,13 +75,10 @@ export default function App() {
       ? "Tu modifies du code HTML existant. Genere TOUJOURS un seul bloc ```html avec la page complete mise a jour. Code actuel:\n\n" + currentHTML
       : "Tu generes TOUJOURS un seul bloc ```html avec une page HTML complete autonome (CSS dans style, JS dans script). Jamais de React.";
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-5",
