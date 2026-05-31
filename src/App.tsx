@@ -93,29 +93,13 @@ export default function App() {
     setShowMenu(false);
   }
 
-  async function publishApp() {
-    if (!currentHTML) { alert("Génère d'abord une application !"); return; }
-    setShowMenu(false);
-    try {
-      const zip = new JSZip();
-      zip.file("index.html", currentHTML);
-      const blob = await zip.generateAsync({ type: "blob" });
-      const response = await fetch("https://api.netlify.com/api/v1/sites", {
-        method: "POST",
-        headers: { "Content-Type": "application/zip" },
-        body: blob,
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.open(data.url, "_blank");
-        alert("Publié ! URL: " + data.url);
-      } else {
-        alert("Erreur publication: " + JSON.stringify(data));
-      }
-    } catch {
-      alert("Erreur de publication");
-    }
+  function publishApp() {
+    if (!currentHTML) { alert("Génère dabord une application !"); return; }
+    const blob = new Blob([currentHTML], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
   }
+
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0a0a0f", color: "#e2e8f0", fontFamily: "'Inter', sans-serif" }}>
