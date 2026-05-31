@@ -24,7 +24,6 @@ export default function App() {
   const [showProjects, setShowProjects] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-  const [publishURL, setPublishURL] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,7 +55,7 @@ export default function App() {
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
       const html = extractHTML(assistantContent);
-      if (html) { setCurrentHTML(html); setPreview(html); setPublishURL(""); }
+      if (html) { setCurrentHTML(html); setPreview(html); }
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
@@ -69,6 +68,7 @@ export default function App() {
     const updated = [...projects, project];
     setProjects(updated);
     localStorage.setItem("projects", JSON.stringify(updated));
+    setShowMenu(false);
   }
 
   function loadProject(p: Project) {
@@ -77,7 +77,6 @@ export default function App() {
     setCurrentHTML(p.html);
     setPreview(p.html);
     setShowProjects(false);
-    setPublishURL("");
   }
 
   function newProject() {
@@ -85,23 +84,22 @@ export default function App() {
     setMessages([]);
     setCurrentHTML("");
     setPreview("");
-    setPublishURL("");
   }
 
   function exportZip() {
     const zip = new JSZip();
     zip.file("index.html", currentHTML);
     zip.generateAsync({ type: "blob" }).then(blob => saveAs(blob, `${projectName}.zip`));
+    setShowMenu(false);
   }
 
   async function publishApp() {
-    if (!currentHTML) return;
+    if (!currentHTML) { alert("Génère d'abord une application !"); return; }
+    setShowMenu(false);
     try {
       const zip = new JSZip();
       zip.file("index.html", currentHTML);
       const blob = await zip.generateAsync({ type: "blob" });
-      const formData = new FormData();
-      formData.append("file", blob, "site.zip");
       const response = await fetch("https://api.netlify.com/api/v1/sites", {
         method: "POST",
         headers: { "Content-Type": "application/zip" },
@@ -109,10 +107,10 @@ export default function App() {
       });
       const data = await response.json();
       if (data.url) {
-        setPublishURL(data.url);
         window.open(data.url, "_blank");
+        alert("Publié ! URL: " + data.url);
       } else {
-        alert("Erreur: " + JSON.stringify(data));
+        alert("Erreur publication: " + JSON.stringify(data));
       }
     } catch {
       alert("Erreur de publication");
@@ -121,36 +119,42 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0a0a0f", color: "#e2e8f0", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: "#0d0d1a", borderBottom: "1px solid #1e1e3a", gap: "12px" }}>
+      {/* HEADER */}
+      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: "#0d0d1a", borderBottom: "1px solid #1e1e3a", gap: "12px", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>⚡</div>
           <span style={{ fontWeight: "700", fontSize: "18px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Mon Lovable</span>
         </div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} style={{ flex: 1, background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", padding: "6px 12px", color: "#e2e8f0", fontSize: "14px", maxWidth: "200px" }} />
-        <div style={{ marginLeft: "auto", display: "flex", gap: "8px", position: "relative" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
           <button onClick={newProject} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>+ Nouveau</button>
           <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
-          
-          <button onClick={saveProject} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>••• Menu</button>
-          {showMenu && (
-            <div style={{ position: "absolute", top: "44px", right: "0", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "8px", zIndex: 100, minWidth: "200px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
-              <div onClick={() => { saveProject(); setShowMenu(false); }} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#6366f1" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>💾 Sauvegarder</div>
-              <div onClick={() => { exportZip(); setShowMenu(false); }} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>⬇ Télécharger HTML</div>
-              <div onClick={() => { publishApp(); setShowMenu(false); }} style={{ padding: "10px 16px", borderRadius: "8px", cursor: currentHTML ? "pointer" : "not-allowed", fontSize: "13px", color: currentHTML ? "#10b981" : "#4a4a6a" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>🚀 Publier sur Netlify</div>
-              {publishURL && <div style={{ padding: "10px 16px", fontSize: "12px", color: "#6366f1", wordBreak: "break-all" }}>🔗 {publishURL}</div>}
-            </div>
-          )}
+          <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); }} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Menu ▾</button>
         </div>
+
+        {/* MENU DROPDOWN */}
+        {showMenu && (
+          <div style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "8px", zIndex: 200, minWidth: "200px", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
+            <div onClick={saveProject} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#6366f1", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>💾 Sauvegarder</div>
+            <div onClick={exportZip} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>⬇ Télécharger ZIP</div>
+            <div onClick={publishApp} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#10b981", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>🚀 Publier sur Netlify</div>
+          </div>
+        )}
+
+        {/* PROJECTS PANEL */}
+        {showProjects && (
+          <div style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 200, minWidth: "220px", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
+            {projects.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun projet sauvegardé</p> :
+              projects.map(p => (
+                <div key={p.id} onClick={() => loadProject(p)} style={{ padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>📁 {p.name}</div>
+              ))}
+          </div>
+        )}
       </div>
-      {showProjects && (
-        <div style={{ position: "absolute", top: "60px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 100, minWidth: "220px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
-          {projects.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun projet sauvegardé</p> :
-            projects.map(p => (
-              <div key={p.id} onClick={() => loadProject(p)} style={{ padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }}>📁 {p.name}</div>
-            ))}
-        </div>
-      )}
+
+      {/* MAIN */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* CHAT */}
         <div style={{ width: "420px", display: "flex", flexDirection: "column", borderRight: "1px solid #1e1e3a" }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
             {messages.length === 0 && (
@@ -186,6 +190,8 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* PREVIEW */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", padding: "0 20px", background: "#0d0d1a", borderBottom: "1px solid #1e1e3a", gap: "4px" }}>
             <button onClick={() => setActiveTab("preview")} style={{ padding: "12px 16px", background: "none", border: "none", color: activeTab === "preview" ? "#6366f1" : "#4a4a6a", cursor: "pointer", fontSize: "13px", fontWeight: activeTab === "preview" ? "600" : "400", borderBottom: activeTab === "preview" ? "2px solid #6366f1" : "2px solid transparent" }}>Aperçu en direct</button>
