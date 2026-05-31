@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import CodeEditor from "./CodeEditor";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -85,6 +87,12 @@ export default function App() {
     setShowProjects(false);
   }
 
+  function exportZip() {
+    const zip = new JSZip();
+    zip.file("index.html", currentHTML);
+    zip.generateAsync({ type: "blob" }).then(blob => saveAs(blob, `${projectName}.zip`));
+  }
+
   function newProject() {
     setProjectName("Nouveau projet");
     setMessages([]);
@@ -103,6 +111,7 @@ export default function App() {
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
           <button onClick={newProject} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>+ Nouveau</button>
           <button onClick={() => setShowProjects(!showProjects)} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
+          <button onClick={exportZip} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>⬇ Export</button>
           <button onClick={saveProject} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Sauvegarder</button>
         </div>
       </div>
