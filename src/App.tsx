@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import CodeEditor from "./CodeEditor";
 
 type Message = { role: "user" | "assistant"; content: string };
 type Project = { id: string; name: string; html: string; messages: Message[] };
@@ -168,7 +169,7 @@ export default function App() {
               <p style={{ fontSize: "14px", color: "#4a4a6a" }}>L'aperçu apparaîtra ici</p>
             </div>
           ) : (
-            <textarea value={currentHTML} onChange={e => { setCurrentHTML(e.target.value); setPreview(e.target.value); }} style={{ flex: 1, background: "#0d0d1a", color: "#a0aec0", border: "none", padding: "20px", fontSize: "12px", fontFamily: "monospace", resize: "none", outline: "none", lineHeight: "1.6" }} />
+            <CodeEditor value={currentHTML} onChange={(v) => { setCurrentHTML(v); setPreview(v); }} />
           )}
         </div>
       </div>
