@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import CodeEditor from "./CodeEditor";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import CodeEditor from "./CodeEditor";
 
 type Message = { role: "user" | "assistant"; content: string };
 type Project = { id: string; name: string; html: string; messages: Message[] };
@@ -22,7 +22,9 @@ export default function App() {
   const [projectName, setProjectName] = useState("Nouveau projet");
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProjects, setShowProjects] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [publishURL, setPublishURL] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,19 +49,14 @@ export default function App() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5",
-          max_tokens: 8000,
-          system: systemPrompt,
-          messages: newMessages,
-        }),
+        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 8000, system: systemPrompt, messages: newMessages }),
       });
       const data = await response.json();
       const assistantContent = data.content[0].text;
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
       const html = extractHTML(assistantContent);
-      if (html) { setCurrentHTML(html); setPreview(html); }
+      if (html) { setCurrentHTML(html); setPreview(html); setPublishURL(""); }
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
@@ -68,12 +65,7 @@ export default function App() {
   }
 
   function saveProject() {
-    const project: Project = {
-      id: Date.now().toString(),
-      name: projectName,
-      html: currentHTML,
-      messages,
-    };
+    const project: Project = { id: Date.now().toString(), name: projectName, html: currentHTML, messages };
     const updated = [...projects, project];
     setProjects(updated);
     localStorage.setItem("projects", JSON.stringify(updated));
@@ -85,33 +77,15 @@ export default function App() {
     setCurrentHTML(p.html);
     setPreview(p.html);
     setShowProjects(false);
+    setPublishURL("");
   }
 
-  async function publishApp() {
-    if (!currentHTML) return;
-    try {
-      const response = await fetch("https://api.netlify.com/api/v1/sites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: projectName.toLowerCase().replace(/[^a-z0-9]/g, "-") })
-      });
-      const site = await response.json();
-      const deploy = await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/deploys`, {
-        method: "POST",
-        headers: { "Content-Type": "application/zip" },
-        body: await createZipBlob()
-      });
-      const result = await deploy.json();
-      window.open(`https://${result.subdomain}.netlify.app`, "_blank");
-    } catch {
-      alert("Erreur de publication");
-    }
-  }
-
-  async function createZipBlob() {
-    const zip = new JSZip();
-    zip.file("index.html", currentHTML);
-    return await zip.generateAsync({ type: "blob" });
+  function newProject() {
+    setProjectName("Nouveau projet");
+    setMessages([]);
+    setCurrentHTML("");
+    setPreview("");
+    setPublishURL("");
   }
 
   function exportZip() {
@@ -120,11 +94,29 @@ export default function App() {
     zip.generateAsync({ type: "blob" }).then(blob => saveAs(blob, `${projectName}.zip`));
   }
 
-  function newProject() {
-    setProjectName("Nouveau projet");
-    setMessages([]);
-    setCurrentHTML("");
-    setPreview("");
+  async function publishApp() {
+    if (!currentHTML) return;
+    try {
+      const zip = new JSZip();
+      zip.file("index.html", currentHTML);
+      const blob = await zip.generateAsync({ type: "blob" });
+      const formData = new FormData();
+      formData.append("file", blob, "site.zip");
+      const response = await fetch("https://api.netlify.com/api/v1/sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/zip" },
+        body: blob,
+      });
+      const data = await response.json();
+      if (data.url) {
+        setPublishURL(data.url);
+        window.open(data.url, "_blank");
+      } else {
+        alert("Erreur: " + JSON.stringify(data));
+      }
+    } catch {
+      alert("Erreur de publication");
+    }
   }
 
   return (
@@ -135,21 +127,25 @@ export default function App() {
           <span style={{ fontWeight: "700", fontSize: "18px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Mon Lovable</span>
         </div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} style={{ flex: 1, background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", padding: "6px 12px", color: "#e2e8f0", fontSize: "14px", maxWidth: "200px" }} />
-        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px", position: "relative" }}>
           <button onClick={newProject} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>+ Nouveau</button>
-          <button onClick={() => setShowProjects(!showProjects)} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
-          <button onClick={exportZip} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>⬇ Export</button>
-          <button onClick={publishApp} disabled={!currentHTML} style={{ padding: "8px 16px", background: currentHTML ? "linear-gradient(135deg, #10b981, #059669)" : "#1a1a2e", border: "none", borderRadius: "8px", color: "white", cursor: currentHTML ? "pointer" : "not-allowed", fontSize: "13px", fontWeight: "600" }}>🚀 Publier</button>
+          <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
+          <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>•••</button>
           <button onClick={saveProject} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Sauvegarder</button>
+          {showMenu && (
+            <div style={{ position: "absolute", top: "44px", right: "0", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "8px", zIndex: 100, minWidth: "200px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+              <div onClick={() => { exportZip(); setShowMenu(false); }} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>⬇ Télécharger HTML</div>
+              <div onClick={() => { publishApp(); setShowMenu(false); }} style={{ padding: "10px 16px", borderRadius: "8px", cursor: currentHTML ? "pointer" : "not-allowed", fontSize: "13px", color: currentHTML ? "#10b981" : "#4a4a6a" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>🚀 Publier sur Netlify</div>
+              {publishURL && <div style={{ padding: "10px 16px", fontSize: "12px", color: "#6366f1", wordBreak: "break-all" }}>🔗 {publishURL}</div>}
+            </div>
+          )}
         </div>
       </div>
       {showProjects && (
         <div style={{ position: "absolute", top: "60px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 100, minWidth: "220px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
           {projects.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun projet sauvegardé</p> :
             projects.map(p => (
-              <div key={p.id} onClick={() => loadProject(p)} style={{ padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }}>
-                📁 {p.name}
-              </div>
+              <div key={p.id} onClick={() => loadProject(p)} style={{ padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }}>📁 {p.name}</div>
             ))}
         </div>
       )}
@@ -169,9 +165,7 @@ export default function App() {
                   {m.role === "assistant" && extractHTML(m.content) ? (
                     <div>
                       <span style={{ color: "#6366f1", fontWeight: "600" }}>✓ HTML généré</span>
-                      <button onClick={() => { setPreview(extractHTML(m.content)!); setActiveTab("preview"); }} style={{ display: "block", marginTop: "8px", padding: "6px 12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px" }}>
-                        Voir aperçu
-                      </button>
+                      <button onClick={() => { setPreview(extractHTML(m.content)!); setActiveTab("preview"); }} style={{ display: "block", marginTop: "8px", padding: "6px 12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px" }}>Voir aperçu</button>
                     </div>
                   ) : m.content}
                 </div>
@@ -187,9 +181,7 @@ export default function App() {
           <div style={{ padding: "16px", borderTop: "1px solid #1e1e3a" }}>
             <div style={{ display: "flex", gap: "8px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "12px", padding: "8px" }}>
               <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={messages.length > 0 ? "Demande une modification..." : "Décris ton application..."} rows={2} style={{ flex: 1, background: "transparent", border: "none", color: "#e2e8f0", fontSize: "13px", resize: "none", outline: "none", lineHeight: "1.5" }} />
-              <button onClick={sendMessage} disabled={loading} style={{ padding: "8px 16px", background: loading ? "#2d2d4e" : "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: loading ? "not-allowed" : "pointer", fontSize: "13px", fontWeight: "600", alignSelf: "flex-end" }}>
-                {loading ? "..." : "↑"}
-              </button>
+              <button onClick={sendMessage} disabled={loading} style={{ padding: "8px 16px", background: loading ? "#2d2d4e" : "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: loading ? "not-allowed" : "pointer", fontSize: "13px", fontWeight: "600", alignSelf: "flex-end" }}>{loading ? "..." : "↑"}</button>
             </div>
           </div>
         </div>
