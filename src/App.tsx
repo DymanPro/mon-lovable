@@ -87,6 +87,33 @@ export default function App() {
     setShowProjects(false);
   }
 
+  async function publishApp() {
+    if (!currentHTML) return;
+    try {
+      const response = await fetch("https://api.netlify.com/api/v1/sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: projectName.toLowerCase().replace(/[^a-z0-9]/g, "-") })
+      });
+      const site = await response.json();
+      const deploy = await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/deploys`, {
+        method: "POST",
+        headers: { "Content-Type": "application/zip" },
+        body: await createZipBlob()
+      });
+      const result = await deploy.json();
+      window.open(`https://${result.subdomain}.netlify.app`, "_blank");
+    } catch {
+      alert("Erreur de publication");
+    }
+  }
+
+  async function createZipBlob() {
+    const zip = new JSZip();
+    zip.file("index.html", currentHTML);
+    return await zip.generateAsync({ type: "blob" });
+  }
+
   function exportZip() {
     const zip = new JSZip();
     zip.file("index.html", currentHTML);
@@ -112,6 +139,7 @@ export default function App() {
           <button onClick={newProject} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>+ Nouveau</button>
           <button onClick={() => setShowProjects(!showProjects)} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
           <button onClick={exportZip} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>⬇ Export</button>
+          <button onClick={publishApp} disabled={!currentHTML} style={{ padding: "8px 16px", background: currentHTML ? "linear-gradient(135deg, #10b981, #059669)" : "#1a1a2e", border: "none", borderRadius: "8px", color: "white", cursor: currentHTML ? "pointer" : "not-allowed", fontSize: "13px", fontWeight: "600" }}>🚀 Publier</button>
           <button onClick={saveProject} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Sauvegarder</button>
         </div>
       </div>
