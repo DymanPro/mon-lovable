@@ -107,7 +107,7 @@ export default function App() {
       <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: "#0d0d1a", borderBottom: "1px solid #1e1e3a", gap: "12px", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>⚡</div>
-          <span style={{ fontWeight: "700", fontSize: "18px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Mon Lovable</span>
+          <span style={{ fontWeight: "700", fontSize: "18px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Buildly</span>
         </div>
         <input value={projectName} onChange={e => setProjectName(e.target.value)} style={{ flex: 1, background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", padding: "6px 12px", color: "#e2e8f0", fontSize: "14px", maxWidth: "200px" }} />
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
