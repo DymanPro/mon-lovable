@@ -24,7 +24,10 @@ export default function App() {
   const [showProjects, setShowProjects] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [uploadedFiles, setUploadedFiles] = useState<{name: string, content: string, type: string}[]>([]);
+  const [showFiles, setShowFiles] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("projects");
@@ -36,6 +39,28 @@ export default function App() {
   }, [messages]);
 
   const systemPrompt = `Tu es un expert en développement web. Génère du code HTML complet et autonome avec CSS et JS inclus. Retourne TOUJOURS le code complet dans un bloc html. Le code doit être moderne, beau, avec des animations et un design professionnel. Si l'utilisateur demande une modification, retourne le code HTML complet modifié.`;
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target?.result as string;
+        setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
+      };
+      if (file.type.startsWith("image/")) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+    e.target.value = "";
+  }
+
+  function removeFile(name: string) {
+    setUploadedFiles(prev => prev.filter(f => f.name !== name));
+  }
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
@@ -89,6 +114,7 @@ export default function App() {
   function exportZip() {
     const zip = new JSZip();
     zip.file("index.html", currentHTML);
+    uploadedFiles.forEach(f => zip.file(f.name, f.content));
     zip.generateAsync({ type: "blob" }).then(blob => saveAs(blob, `${projectName}.zip`));
     setShowMenu(false);
   }
@@ -99,7 +125,6 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
   }
-
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0a0a0f", color: "#e2e8f0", fontFamily: "'Inter', sans-serif" }}>
@@ -112,8 +137,9 @@ export default function App() {
         <input value={projectName} onChange={e => setProjectName(e.target.value)} style={{ flex: 1, background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", padding: "6px 12px", color: "#e2e8f0", fontSize: "14px", maxWidth: "200px" }} />
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
           <button onClick={newProject} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>+ Nouveau</button>
-          <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
-          <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); }} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Menu ▾</button>
+          <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); setShowFiles(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
+          <button onClick={() => { setShowFiles(!showFiles); setShowMenu(false); setShowProjects(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>📎 Fichiers ({uploadedFiles.length})</button>
+          <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); setShowFiles(false); }} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Menu ▾</button>
         </div>
 
         {/* MENU DROPDOWN */}
@@ -122,6 +148,21 @@ export default function App() {
             <div onClick={saveProject} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#6366f1", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>💾 Sauvegarder</div>
             <div onClick={exportZip} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>⬇ Télécharger ZIP</div>
             <div onClick={publishApp} style={{ padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#10b981", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>🚀 Publier sur Netlify</div>
+          </div>
+        )}
+
+        {/* FILES PANEL */}
+        {showFiles && (
+          <div style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 200, minWidth: "260px", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
+            <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+            <button onClick={() => fileInputRef.current?.click()} style={{ width: "100%", padding: "10px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>+ Ajouter des fichiers</button>
+            {uploadedFiles.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun fichier déposé</p> :
+              uploadedFiles.map(f => (
+                <div key={f.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "8px", background: "#1a1a2e", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", color: "#a0aec0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>📄 {f.name}</span>
+                  <button onClick={() => removeFile(f.name)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}>✕</button>
+                </div>
+              ))}
           </div>
         )}
 
