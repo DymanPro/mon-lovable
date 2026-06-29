@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "./supabase";
+import { saveProjectToSupabase, loadProjectsFromSupabase } from "./supabaseProjects";
 import CodeEditor from "./CodeEditor";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -42,8 +44,8 @@ export default function App() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("projects");
-    if (saved) setProjects(JSON.parse(saved));
+    loadProjectsFromSupabase().then(data => setProjects(data));
+
   }, []);
 
   useEffect(() => {
@@ -132,7 +134,7 @@ GÉNÉRATION DE CODE :
     const project: Project = { id: Date.now().toString(), name: projectName, html: currentHTML, messages };
     const updated = [...projects, project];
     setProjects(updated);
-    localStorage.setItem("projects", JSON.stringify(updated));
+    saveProjectToSupabase(project);
     setShowMenu(false);
   }
 
