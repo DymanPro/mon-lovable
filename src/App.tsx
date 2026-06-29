@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "./supabase";
 import { saveProjectToSupabase, loadProjectsFromSupabase } from "./supabaseProjects";
 import CodeEditor from "./CodeEditor";
 import JSZip from "jszip";
