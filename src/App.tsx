@@ -83,9 +83,9 @@ PROCESSUS OBLIGATOIRE AVANT DE CODER :
 9. Attends confirmation avant de générer le code
 
 IMAGES - UTILISE L'API UNSPLASH :
-- Dans le HTML, charge les images via fetch vers /api/unsplash?query=mot-clé-anglais
+- Dans le HTML, charge les images via fetch vers https://mon-lovable-hs9h.vercel.app/api/unsplash?query=mot-clé-anglais
 - Exemple :
-  fetch('/api/unsplash?query=spa+massage+luxury')
+  fetch('https://mon-lovable-hs9h.vercel.app/api/unsplash?query=spa+massage+luxury')
     .then(r => r.json())
     .then(data => { if(data.urls[0]) document.getElementById('img1').src = data.urls[0]; })
 - Ajoute un placeholder gris pendant le chargement
@@ -135,7 +135,7 @@ GÉNÉRATION DE CODE :
     const urls: string[] = [];
     for (const keyword of keywords) {
       try {
-        const res = await fetch(`/api/unsplash?query=${encodeURIComponent(keyword)}`);
+        const res = await fetch(`https://mon-lovable-hs9h.vercel.app/api/unsplash?query=${encodeURIComponent(keyword)}`);
         const data = await res.json();
         if (data.urls && data.urls[0]) urls.push(data.urls[0]);
       } catch {}
