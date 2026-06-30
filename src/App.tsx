@@ -170,12 +170,8 @@ GÉNÉRATION DE CODE :
         imageUrls = await fetchUnsplashImages(keywords);
       }
 
-      const imageContext = imageUrls.length > 0 
-        ? `
-
-IMGS UNSPLASH DISPONIBLES (utilise-les directement dans le HTML) :
-${imageUrls.map((url, i) => `Image ${i+1}: ${url}`).join('
-')}`
+      const imageContext = imageUrls.length > 0
+        ? '\n\nIMGS UNSPLASH DISPONIBLES :\n' + imageUrls.map((url, i) => 'Image ' + (i+1) + ': ' + url).join('\n')
         : '';
 
       const messagesWithImages = [...newMessages];
