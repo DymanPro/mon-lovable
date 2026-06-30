@@ -192,25 +192,8 @@ GÉNÉRATION DE CODE :
       const assistantContent = data.content[0].text;
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
-      let html = extractHTML(assistantContent);
-      if (html) {
-        // Remplacer les appels fetch Unsplash par les vraies URLs
-        if (imageUrls.length > 0) {
-          imageUrls.forEach((url, i) => {
-            html = html!.replace(
-              new RegExp(`fetch\\(['"]/api/unsplash\\?query=[^'"]*['"]\\)\\s*\.then\\([^)]*\\)\\s*\.then\\([^}]*img[^}]*\.src\\s*=\\s*data\.urls\\[${i}\\][^}]*\\}\\)`, 'g'),
-              `/* image loaded */`
-            );
-          });
-          // Remplacer les src placeholder par les vraies URLs
-          imageUrls.forEach((url, i) => {
-            html = html!.replace(`data-unsplash-query`, `src="${url}"`);
-          });
-        }
-        setCurrentHTML(html!); 
-        setPreview(html!); 
-        setActiveTab("preview"); 
-      }
+      const html = extractHTML(assistantContent);
+      if (html) { setCurrentHTML(html); setPreview(html); setActiveTab("preview"); }
     } catch (e: any) {
       if (e.name !== "AbortError") setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
