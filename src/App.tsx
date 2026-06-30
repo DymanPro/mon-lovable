@@ -131,6 +131,26 @@ GÉNÉRATION DE CODE :
     if (abortRef.current) { abortRef.current.abort(); setLoading(false); setLoadingStep(""); }
   }
 
+  async function fetchUnsplashImages(keywords: string[]): Promise<string[]> {
+    const urls: string[] = [];
+    for (const keyword of keywords) {
+      try {
+        const res = await fetch(`/api/unsplash?query=${encodeURIComponent(keyword)}`);
+        const data = await res.json();
+        if (data.urls && data.urls[0]) urls.push(data.urls[0]);
+      } catch {}
+    }
+    return urls;
+  }
+
+  function extractKeywords(text: string): string[] {
+    const common = ["massage", "spa", "wellness", "yoga", "fitness", "food", "restaurant", 
+                   "travel", "business", "technology", "nature", "fashion", "beauty",
+                   "sport", "music", "art", "architecture", "medical", "education"];
+    const lower = text.toLowerCase();
+    return common.filter(k => lower.includes(k)).slice(0, 3);
+  }
+
   async function sendMessage(customInput?: string) {
     const text = customInput || input;
     if (!text.trim() || loading) return;
@@ -143,10 +163,33 @@ GÉNÉRATION DE CODE :
     try {
       setTimeout(() => setLoadingStep("Buddy analyse ta demande..."), 2000);
       setTimeout(() => setLoadingStep("Buddy code ton app... ⚡"), 5000);
+      
+      const keywords = extractKeywords(text);
+      let imageUrls: string[] = [];
+      if (keywords.length > 0) {
+        imageUrls = await fetchUnsplashImages(keywords);
+      }
+
+      const imageContext = imageUrls.length > 0 
+        ? `
+
+IMGS UNSPLASH DISPONIBLES (utilise-les directement dans le HTML) :
+${imageUrls.map((url, i) => `Image ${i+1}: ${url}`).join('
+')}`
+        : '';
+
+      const messagesWithImages = [...newMessages];
+      if (imageUrls.length > 0) {
+        messagesWithImages[messagesWithImages.length - 1] = {
+          ...messagesWithImages[messagesWithImages.length - 1],
+          content: messagesWithImages[messagesWithImages.length - 1].content + imageContext
+        };
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 8000, system: systemPrompt, messages: newMessages }),
+        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 8000, system: systemPrompt, messages: messagesWithImages }),
         signal: abortRef.current.signal,
       });
       const data = await response.json();
