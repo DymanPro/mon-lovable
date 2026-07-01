@@ -126,6 +126,7 @@ GÉNÉRATION DE CODE :
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     e.stopPropagation();
+    console.log("DROP DECLENCHE", e.dataTransfer.files);
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
     Array.from(files).forEach(file => {
