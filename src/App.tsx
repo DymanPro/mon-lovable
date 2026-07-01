@@ -123,6 +123,27 @@ GÉNÉRATION DE CODE :
     e.target.value = "";
   }
 
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target?.result as string;
+        setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
+      };
+      if (file.type.startsWith("image/")) reader.readAsDataURL(file);
+      else reader.readAsText(file);
+    });
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function removeFile(name: string) {
     setUploadedFiles(prev => prev.filter(f => f.name !== name));
   }
@@ -277,10 +298,10 @@ GÉNÉRATION DE CODE :
         )}
 
         {showFiles && (
-          <div style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 200, minWidth: "260px", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
+          <div onDrop={handleDrop} onDragOver={handleDragOver} style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px dashed #4a4a6a", borderRadius: "12px", padding: "12px", zIndex: 200, minWidth: "260px", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
             <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} style={{ display: "none" }} />
             <button onClick={() => fileInputRef.current?.click()} style={{ width: "100%", padding: "10px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>+ Ajouter des fichiers</button>
-            {uploadedFiles.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun fichier déposé</p> :
+            {uploadedFiles.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Glisse un fichier ici ou clique ci-dessus</p> :
               uploadedFiles.map(f => (
                 <div key={f.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "8px", background: "#1a1a2e", marginBottom: "4px" }}>
                   <span style={{ fontSize: "12px", color: "#a0aec0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>📄 {f.name}</span>
