@@ -370,9 +370,23 @@ GÉNÉRATION DE CODE :
             <div ref={messagesEndRef} />
           </div>
           <div style={{ padding: "16px", borderTop: "1px solid #1e1e3a" }}>
-            <div style={{ display: "flex", gap: "8px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "12px", padding: "8px" }}>
-              <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Décris ton application... (⌘+Entrée pour envoyer)" rows={2} style={{ flex: 1, background: "transparent", border: "none", color: "#e2e8f0", fontSize: "13px", resize: "none", outline: "none", lineHeight: "1.5" }} />
-              <button onClick={() => sendMessage()} disabled={loading} style={{ padding: "8px 16px", background: loading ? "#2d2d4e" : "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: loading ? "not-allowed" : "pointer", fontSize: "13px", fontWeight: "600", alignSelf: "flex-end" }}>{loading ? "..." : "↑"}</button>
+            {uploadedFiles.length > 0 && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                {uploadedFiles.map(f => (
+                  <div key={f.name} style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
+                    📎 {f.name}
+                    <button onClick={() => removeFile(f.name)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px", padding: "0" }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div onDrop={handleDrop} onDragOver={handleDragOver} style={{ background: "#ffffff", borderRadius: "20px", padding: "10px 14px", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
+              <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+              <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Écrire un message... (glisse un fichier ici)" rows={1} style={{ width: "100%", background: "transparent", border: "none", color: "#1a1a2e", fontSize: "14px", resize: "none", outline: "none", lineHeight: "1.5", marginBottom: "6px", fontFamily: "inherit" }} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <button onClick={() => fileInputRef.current?.click()} style={{ width: "30px", height: "30px", borderRadius: "50%", background: "none", border: "1px solid #d0d0d0", color: "#555", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: "1" }}>+</button>
+                <button onClick={() => sendMessage()} disabled={loading} style={{ width: "34px", height: "34px", borderRadius: "50%", background: loading ? "#d0d0d0" : "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "white", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>{loading ? "…" : "↑"}</button>
+              </div>
             </div>
           </div>
         </div>
