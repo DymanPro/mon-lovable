@@ -123,17 +123,50 @@ GÉNÉRATION DE CODE :
 - CSS et JS inclus dans le même fichier HTML
 - Vérifie que le code est valide et sans erreur de syntaxe avant de répondre`;
 
+  function compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        img.onload = () => {
+          const maxDim = 1024;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+            else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("canvas context")); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = reject;
+        img.src = ev.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const content = ev.target?.result as string;
-        setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
-      };
-      if (file.type.startsWith("image/")) reader.readAsDataURL(file);
-      else reader.readAsText(file);
+      if (file.type.startsWith("image/")) {
+        compressImage(file).then(content => {
+          setUploadedFiles(prev => [...prev, { name: file.name, content, type: "image/jpeg" }]);
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const content = ev.target?.result as string;
+          setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
+        };
+        reader.readAsText(file);
+      }
     });
     e.target.value = "";
   }
@@ -144,13 +177,18 @@ GÉNÉRATION DE CODE :
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
     Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const content = ev.target?.result as string;
-        setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
-      };
-      if (file.type.startsWith("image/")) reader.readAsDataURL(file);
-      else reader.readAsText(file);
+      if (file.type.startsWith("image/")) {
+        compressImage(file).then(content => {
+          setUploadedFiles(prev => [...prev, { name: file.name, content, type: "image/jpeg" }]);
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const content = ev.target?.result as string;
+          setUploadedFiles(prev => [...prev, { name: file.name, content, type: file.type }]);
+        };
+        reader.readAsText(file);
+      }
     });
   }
 
