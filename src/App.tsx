@@ -126,7 +126,6 @@ GÉNÉRATION DE CODE :
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     e.stopPropagation();
-    console.log("DROP DECLENCHE", e.dataTransfer.files);
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
     Array.from(files).forEach(file => {
@@ -177,7 +176,8 @@ GÉNÉRATION DE CODE :
     const text = customInput || input;
     if (!text.trim() || loading) return;
     setInput("");
-    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() }];
+    const attachmentNote = uploadedFiles.length > 0 ? '\n📎 ' + uploadedFiles.map(f => f.name).join(', ') : '';
+    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() + attachmentNote }];
     setMessages(newMessages);
     setLoading(true);
     setLoadingStep("Buddy réfléchit...");
@@ -204,6 +204,17 @@ GÉNÉRATION DE CODE :
         };
       }
 
+      const imageFilesToSend = uploadedFiles.filter(f => f.type.startsWith("image/"));
+      if (imageFilesToSend.length > 0) {
+        const lastMsg = messagesWithImages[messagesWithImages.length - 1];
+        const contentBlocks: any[] = [{ type: "text", text: lastMsg.content }];
+        imageFilesToSend.forEach(f => {
+          const base64Data = f.content.split(",")[1];
+          contentBlocks.push({ type: "image", source: { type: "base64", media_type: f.type, data: base64Data } });
+        });
+        messagesWithImages[messagesWithImages.length - 1] = { ...lastMsg, content: contentBlocks as any };
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -214,6 +225,7 @@ GÉNÉRATION DE CODE :
       const assistantContent = data.content[0].text;
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
+      setUploadedFiles([]);
       const html = extractHTML(assistantContent);
       if (html) { setCurrentHTML(html); setPreview(html); setActiveTab("preview"); }
     } catch (e: any) {
