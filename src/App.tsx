@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { saveProjectToSupabase, loadProjectsFromSupabase } from "./supabaseProjects";
+import { saveProjectToSupabase, loadProjectsFromSupabase, saveVersionToSupabase, loadVersionsFromSupabase } from "./supabaseProjects";
 import CodeEditor from "./CodeEditor";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -32,12 +32,15 @@ export default function App() {
   const [currentHTML, setCurrentHTML] = useState("");
   const [projectName, setProjectName] = useState("Nouveau projet");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [uploadedFiles, setUploadedFiles] = useState<{name: string, content: string, type: string}[]>([]);
   const [showFiles, setShowFiles] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [versions, setVersions] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -288,6 +291,15 @@ GÉNÉRATION DE CODE :
           html = html!.split(placeholder).join(f.content);
         });
         setCurrentHTML(html); setPreview(html); setActiveTab("preview");
+        const idToUse = currentProjectId || Date.now().toString();
+        if (!currentProjectId) setCurrentProjectId(idToUse);
+        const projectToSave: Project = { id: idToUse, name: projectName, html, messages: updatedMessages };
+        setProjects(prev => {
+          const exists = prev.some(p => p.id === idToUse);
+          return exists ? prev.map(p => p.id === idToUse ? projectToSave : p) : [...prev, projectToSave];
+        });
+        saveProjectToSupabase(projectToSave);
+        saveVersionToSupabase(idToUse, html, updatedMessages);
       }
     } catch (e: any) {
       if (e.name !== "AbortError") setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
@@ -298,9 +310,14 @@ GÉNÉRATION DE CODE :
   }
 
   function saveProject() {
-    const project: Project = { id: Date.now().toString(), name: projectName, html: currentHTML, messages };
-    const updated = [...projects, project];
-    setProjects(updated);
+    const id = currentProjectId || Date.now().toString();
+    const project: Project = { id, name: projectName, html: currentHTML, messages };
+    if (!currentProjectId) {
+      setCurrentProjectId(id);
+      setProjects(prev => [...prev, project]);
+    } else {
+      setProjects(prev => prev.map(p => p.id === id ? project : p));
+    }
     saveProjectToSupabase(project);
     setShowMenu(false);
   }
@@ -310,6 +327,7 @@ GÉNÉRATION DE CODE :
     setMessages(p.messages);
     setCurrentHTML(p.html);
     setPreview(p.html);
+    setCurrentProjectId(p.id);
     setShowProjects(false);
   }
 
@@ -318,6 +336,15 @@ GÉNÉRATION DE CODE :
     setMessages([]);
     setCurrentHTML("");
     setPreview("");
+    setCurrentProjectId(null);
+  }
+
+  function restoreVersion(v: any) {
+    setCurrentHTML(v.html);
+    setPreview(v.html);
+    if (v.messages) setMessages(v.messages);
+    setActiveTab("preview");
+    setShowHistory(false);
   }
 
   function exportZip() {
@@ -348,6 +375,7 @@ GÉNÉRATION DE CODE :
           <button onClick={() => { setShowTemplates(!showTemplates); setShowProjects(false); setShowMenu(false); setShowFiles(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>⚡ Templates</button>
           <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); setShowFiles(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
           <button onClick={() => { setShowFiles(!showFiles); setShowMenu(false); setShowProjects(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>📎 Fichiers ({uploadedFiles.length})</button>
+          <button onClick={async () => { const v = await loadVersionsFromSupabase(currentProjectId || ""); setVersions(v); setShowHistory(!showHistory); setShowMenu(false); setShowProjects(false); setShowTemplates(false); setShowFiles(false); }} disabled={!currentProjectId} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: currentProjectId ? "#a0aec0" : "#4a4a6a", cursor: currentProjectId ? "pointer" : "not-allowed", fontSize: "13px" }}>🕐 Historique</button>
           <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); setShowFiles(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Menu ▾</button>
         </div>
 
@@ -390,6 +418,18 @@ GÉNÉRATION DE CODE :
             {projects.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucun projet sauvegardé</p> :
               projects.map(p => (
                 <div key={p.id} onClick={() => loadProject(p)} style={{ padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", color: "#a0aec0" }} onMouseEnter={e => (e.currentTarget.style.background = "#1a1a2e")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>📁 {p.name}</div>
+              ))}
+          </div>
+        )}
+
+        {showHistory && (
+          <div style={{ position: "absolute", top: "56px", right: "20px", background: "#0d0d1a", border: "1px solid #1e1e3a", borderRadius: "12px", padding: "12px", zIndex: 200, minWidth: "280px", maxHeight: "400px", overflowY: "auto", boxShadow: "0 20px 40px rgba(0,0,0,0.7)" }}>
+            {versions.length === 0 ? <p style={{ color: "#4a4a6a", fontSize: "13px", textAlign: "center" }}>Aucune version enregistrée</p> :
+              versions.map((v, i) => (
+                <div key={v.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "8px", background: "#1a1a2e", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "12px", color: "#a0aec0" }}>{i === 0 ? "🟢 Version actuelle" : "🕐 " + new Date(v.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                  {i !== 0 && <button onClick={() => restoreVersion(v)} style={{ padding: "4px 10px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "11px" }}>Restaurer</button>}
+                </div>
               ))}
           </div>
         )}
