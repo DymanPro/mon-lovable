@@ -83,9 +83,11 @@ PROCESSUS OBLIGATOIRE AVANT DE CODER :
 9. Attends confirmation avant de générer le code
 
 IMAGES JOINTES PAR L'UTILISATEUR :
-- Si l'utilisateur joint une image (capture d'écran, photo, mockup), analyse-la comme référence de design
-- Inspire-toi de sa palette de couleurs, sa mise en page, son ambiance générale
-- Ne tente JAMAIS d'insérer l'image jointe elle-même dans le HTML final (elle n'est pas hébergée en ligne et ne s'affichera pas) — utilise plutôt Unsplash pour les vraies images du site
+- Si l'utilisateur joint des photos (ex: photos de son activité, de son équipe, de son produit) et te demande de les utiliser, insère-les avec EXACTEMENT ce format : <img src="PHOTO:nom-exact-du-fichier.jpg">
+- Remplace "nom-exact-du-fichier.jpg" par le nom réel du fichier tel que fourni (respecte la casse et les espaces exacts)
+- Ne mets JAMAIS de vrai code base64 toi-même, utilise UNIQUEMENT ce format de placeholder PHOTO:
+- Si l'utilisateur joint une capture d'écran/mockup comme référence de STYLE (pas comme photo à utiliser), inspire-toi de sa palette de couleurs, sa mise en page, son ambiance — n'utilise PAS de placeholder PHOTO: pour celle-ci
+- Si tu as besoin d'images supplémentaires en plus de celles fournies, complète avec Unsplash (voir section suivante) en gardant le même thème et la même ambiance visuelle que les photos fournies, pour un rendu cohérent
 
 IMAGES - UTILISE L'API UNSPLASH :
 - Dans le HTML, charge les images via fetch vers https://mon-lovable-hs9h.vercel.app/api/unsplash?query=mot-clé-anglais
@@ -279,8 +281,14 @@ GÉNÉRATION DE CODE :
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
       setUploadedFiles([]);
-      const html = extractHTML(assistantContent);
-      if (html) { setCurrentHTML(html); setPreview(html); setActiveTab("preview"); }
+      let html = extractHTML(assistantContent);
+      if (html) {
+        uploadedFiles.forEach(f => {
+          const placeholder = 'PHOTO:' + f.name;
+          html = html!.split(placeholder).join(f.content);
+        });
+        setCurrentHTML(html); setPreview(html); setActiveTab("preview");
+      }
     } catch (e: any) {
       if (e.name !== "AbortError") setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
