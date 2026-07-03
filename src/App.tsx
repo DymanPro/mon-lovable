@@ -292,6 +292,14 @@ GÉNÉRATION DE CODE :
         signal: abortRef.current.signal,
       });
       const data = await response.json();
+      console.log("REPONSE API COMPLETE:", data);
+      if (!data.content || !data.content[0]) {
+        console.error("Pas de content dans la reponse:", JSON.stringify(data));
+        setMessages(prev => [...prev, { role: "assistant", content: "Erreur API: " + (data.error?.message || JSON.stringify(data)) }]);
+        setLoading(false);
+        setLoadingStep("");
+        return;
+      }
       const assistantContent = data.content[0].text;
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
