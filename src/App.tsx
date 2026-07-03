@@ -41,6 +41,8 @@ export default function App() {
   const [showFiles, setShowFiles] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [versions, setVersions] = useState<any[]>([]);
+  const [urlPageText, setUrlPageText] = useState<{ title: string; text: string; url: string } | null>(null);
+  const [analyzingUrl, setAnalyzingUrl] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -235,7 +237,11 @@ GÉNÉRATION DE CODE :
     if (!text.trim() || loading) return;
     setInput("");
     const attachmentNote = uploadedFiles.length > 0 ? '\n📎 ' + uploadedFiles.map(f => f.name).join(', ') : '';
-    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() + attachmentNote }];
+    const urlNote = urlPageText ? '\n🔗 ' + (urlPageText.title || urlPageText.url) : '';
+    const urlContext = urlPageText
+      ? '\n\nCONTENU DE LA PAGE ANALYSÉE (' + urlPageText.url + ') - Titre: ' + urlPageText.title + '\nTexte de la page: ' + urlPageText.text
+      : '';
+    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() + attachmentNote + urlNote }];
     setMessages(newMessages);
     setLoading(true);
     setLoadingStep("Buddy réfléchit...");
@@ -261,6 +267,12 @@ GÉNÉRATION DE CODE :
           content: messagesWithImages[messagesWithImages.length - 1].content + imageContext
         };
       }
+      if (urlContext) {
+        messagesWithImages[messagesWithImages.length - 1] = {
+          ...messagesWithImages[messagesWithImages.length - 1],
+          content: messagesWithImages[messagesWithImages.length - 1].content + urlContext
+        };
+      }
 
       const imageFilesToSend = uploadedFiles.filter(f => f.type.startsWith("image/"));
       if (imageFilesToSend.length > 0) {
@@ -284,6 +296,7 @@ GÉNÉRATION DE CODE :
       const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: assistantContent }];
       setMessages(updatedMessages);
       setUploadedFiles([]);
+      setUrlPageText(null);
       let html = extractHTML(assistantContent);
       if (html) {
         uploadedFiles.forEach(f => {
@@ -337,6 +350,32 @@ GÉNÉRATION DE CODE :
     setCurrentHTML("");
     setPreview("");
     setCurrentProjectId(null);
+  }
+
+  async function analyzeUrl() {
+    const url = window.prompt("Colle l'URL du site à analyser (avec https://) :");
+    if (!url || !url.trim()) return;
+    setAnalyzingUrl(true);
+    try {
+      const [screenshotRes, textRes] = await Promise.all([
+        fetch("/api/screenshot?url=" + encodeURIComponent(url)),
+        fetch("/api/fetch-url?url=" + encodeURIComponent(url)),
+      ]);
+      const screenshotData = await screenshotRes.json();
+      const textData = await textRes.json();
+
+      if (screenshotData.image) {
+        const domain = url.replace(/^https?:\/\//, "").split("/")[0];
+        setUploadedFiles(prev => [...prev, { name: "capture-" + domain + ".jpg", content: screenshotData.image, type: "image/jpeg" }]);
+      }
+      if (textData.text) {
+        setUrlPageText({ title: textData.title || "", text: textData.text, url });
+      }
+    } catch (e) {
+      alert("Impossible d'analyser cette URL.");
+    } finally {
+      setAnalyzingUrl(false);
+    }
   }
 
   function restoreVersion(v: any) {
@@ -471,7 +510,7 @@ GÉNÉRATION DE CODE :
             <div ref={messagesEndRef} />
           </div>
           <div style={{ padding: "16px", borderTop: "1px solid #1e1e3a" }}>
-            {uploadedFiles.length > 0 && (
+            {(uploadedFiles.length > 0 || urlPageText) && (
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
                 {uploadedFiles.map(f => (
                   <div key={f.name} style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
@@ -479,13 +518,22 @@ GÉNÉRATION DE CODE :
                     <button onClick={() => removeFile(f.name)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px", padding: "0" }}>✕</button>
                   </div>
                 ))}
+                {urlPageText && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
+                    🔗 {urlPageText.title || urlPageText.url}
+                    <button onClick={() => setUrlPageText(null)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px", padding: "0" }}>✕</button>
+                  </div>
+                )}
               </div>
             )}
             <div onDrop={handleDrop} onDragOver={handleDragOver} style={{ background: "#ffffff", borderRadius: "20px", padding: "10px 14px", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
               <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} style={{ display: "none" }} />
               <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Écrire un message... (glisse un fichier ici)" rows={1} style={{ width: "100%", background: "transparent", border: "none", color: "#1a1a2e", fontSize: "14px", resize: "none", outline: "none", lineHeight: "1.5", marginBottom: "6px", fontFamily: "inherit" }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <button onClick={() => fileInputRef.current?.click()} style={{ width: "30px", height: "30px", borderRadius: "50%", background: "none", border: "1px solid #d0d0d0", color: "#555", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: "1" }}>+</button>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ width: "30px", height: "30px", borderRadius: "50%", background: "none", border: "1px solid #d0d0d0", color: "#555", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: "1" }}>+</button>
+                  <button onClick={analyzeUrl} disabled={analyzingUrl} title="Analyser une URL" style={{ width: "30px", height: "30px", borderRadius: "50%", background: "none", border: "1px solid #d0d0d0", color: "#555", cursor: analyzingUrl ? "not-allowed" : "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: "1" }}>{analyzingUrl ? "…" : "🔗"}</button>
+                </div>
                 <button onClick={() => sendMessage()} disabled={loading} style={{ width: "34px", height: "34px", borderRadius: "50%", background: loading ? "#d0d0d0" : "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "white", cursor: loading ? "not-allowed" : "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>{loading ? "…" : "↑"}</button>
               </div>
             </div>
