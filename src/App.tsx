@@ -292,10 +292,8 @@ GÉNÉRATION DE CODE :
         signal: abortRef.current.signal,
       });
       const data = await response.json();
-      console.log("REPONSE API COMPLETE:", data);
       if (!data.content || !data.content[0]) {
-        console.error("Pas de content dans la reponse:", JSON.stringify(data));
-        setMessages(prev => [...prev, { role: "assistant", content: "Erreur API: " + (data.error?.message || JSON.stringify(data)) }]);
+        setMessages(prev => [...prev, { role: "assistant", content: "Erreur : " + (data.error?.message || "réponse inattendue de l'IA.") }]);
         setLoading(false);
         setLoadingStep("");
         return;
@@ -323,7 +321,6 @@ GÉNÉRATION DE CODE :
         saveVersionToSupabase(idToUse, html, updatedMessages);
       }
     } catch (e: any) {
-      console.error("ERREUR DETAILLEE:", e);
       if (e.name !== "AbortError") setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
       setLoading(false);
