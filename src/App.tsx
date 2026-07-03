@@ -375,7 +375,8 @@ GÉNÉRATION DE CODE :
 
       if (screenshotData.image) {
         const domain = url.replace(/^https?:\/\//, "").split("/")[0];
-        setUploadedFiles(prev => [...prev, { name: "capture-" + domain + ".jpg", content: screenshotData.image, type: "image/jpeg" }]);
+        const ext = (screenshotData.mediaType || "image/png").split("/")[1] || "png";
+        setUploadedFiles(prev => [...prev, { name: "capture-" + domain + "." + ext, content: screenshotData.image, type: screenshotData.mediaType || "image/png" }]);
       }
       if (textData.text) {
         setUrlPageText({ title: textData.title || "", text: textData.text, url });

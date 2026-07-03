@@ -11,9 +11,10 @@ export default async function handler(req, res) {
   try {
     const thumUrl = 'https://image.thum.io/get/width/1200/' + url;
     const response = await fetch(thumUrl);
+    const contentType = response.headers.get('content-type') || 'image/png';
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
-    res.status(200).json({ image: 'data:image/jpeg;base64,' + base64 });
+    res.status(200).json({ image: 'data:' + contentType + ';base64,' + base64, mediaType: contentType });
   } catch (e) {
     res.status(500).json({ error: 'Impossible de capturer cette URL' });
   }
