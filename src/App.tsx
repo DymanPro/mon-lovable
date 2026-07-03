@@ -315,6 +315,7 @@ GÉNÉRATION DE CODE :
         saveVersionToSupabase(idToUse, html, updatedMessages);
       }
     } catch (e: any) {
+      console.error("ERREUR DETAILLEE:", e);
       if (e.name !== "AbortError") setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion." }]);
     } finally {
       setLoading(false);
