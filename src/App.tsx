@@ -281,7 +281,7 @@ GÉNÉRATION DE CODE :
         ? '\n\nIMGS UNSPLASH - UTILISE CES URLs DIRECTEMENT dans <img src="URL">. NE PAS utiliser fetch:\n' + imageUrls.map((url, i) => 'Image ' + (i+1) + ': ' + url).join('\n')
         : '';
 
-      const messagesWithImages = [...newMessages];
+      const messagesWithImages: Message[] = newMessages.map(m => ({ role: m.role, content: m.content }));
       if (imageUrls.length > 0) {
         messagesWithImages[messagesWithImages.length - 1] = {
           ...messagesWithImages[messagesWithImages.length - 1],
