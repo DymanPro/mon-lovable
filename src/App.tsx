@@ -422,6 +422,16 @@ GÉNÉRATION DE CODE :
           <button onClick={() => { setShowProjects(!showProjects); setShowMenu(false); setShowFiles(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>Projets ({projects.length})</button>
           <button onClick={() => { setShowFiles(!showFiles); setShowMenu(false); setShowProjects(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: "#a0aec0", cursor: "pointer", fontSize: "13px" }}>📎 Fichiers ({uploadedFiles.length})</button>
           <button onClick={async () => { const v = await loadVersionsFromSupabase(currentProjectId || ""); setVersions(v); setShowHistory(!showHistory); setShowMenu(false); setShowProjects(false); setShowTemplates(false); setShowFiles(false); }} disabled={!currentProjectId} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: currentProjectId ? "#a0aec0" : "#4a4a6a", cursor: currentProjectId ? "pointer" : "not-allowed", fontSize: "13px" }}>🕐 Historique</button>
+          <button onClick={async () => {
+            if (!currentProjectId) { alert("Génère d'abord une app avant de publier."); return; }
+            const link = window.location.origin + "/api/site?id=" + currentProjectId;
+            try {
+              await navigator.clipboard.writeText(link);
+              alert("Lien copié !\n\n" + link);
+            } catch {
+              window.prompt("Copie ce lien :", link);
+            }
+          }} disabled={!currentProjectId} style={{ padding: "8px 16px", background: currentProjectId ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: currentProjectId ? "white" : "#4a4a6a", cursor: currentProjectId ? "pointer" : "not-allowed", fontSize: "13px", fontWeight: "600" }}>🌐 Publier</button>
           <button onClick={() => { setShowMenu(!showMenu); setShowProjects(false); setShowFiles(false); setShowTemplates(false); }} style={{ padding: "8px 16px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>Menu ▾</button>
         </div>
 
