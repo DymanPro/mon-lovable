@@ -4,7 +4,7 @@ import CodeEditor from "./CodeEditor";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; images?: { name: string; content: string }[] };
 type Project = { id: string; name: string; html: string; messages: Message[] };
 
 const TEMPLATES = [
@@ -255,12 +255,14 @@ GÉNÉRATION DE CODE :
     if (!text.trim() || loading) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    const attachmentNote = uploadedFiles.length > 0 ? '\n📎 ' + uploadedFiles.map(f => f.name).join(', ') : '';
+    const nonImageFiles = uploadedFiles.filter(f => !f.type.startsWith("image/"));
+    const attachmentNote = nonImageFiles.length > 0 ? '\n📎 ' + nonImageFiles.map(f => f.name).join(', ') : '';
     const urlNote = urlPageText ? '\n🔗 ' + (urlPageText.title || urlPageText.url) : '';
     const urlContext = urlPageText
       ? '\n\nCONTENU DE LA PAGE ANALYSÉE (' + urlPageText.url + ') - Titre: ' + urlPageText.title + '\nTexte de la page: ' + urlPageText.text
       : '';
-    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() + attachmentNote + urlNote }];
+    const imagesForBubble = uploadedFiles.filter(f => f.type.startsWith("image/")).map(f => ({ name: f.name, content: f.content }));
+    const newMessages: Message[] = [...messages, { role: "user", content: text.trim() + attachmentNote + urlNote, images: imagesForBubble.length > 0 ? imagesForBubble : undefined }];
     setMessages(newMessages);
     setLoading(true);
     setLoadingStep("Buddy réfléchit...");
@@ -529,6 +531,13 @@ GÉNÉRATION DE CODE :
             {messages.map((m, i) => (
               <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                 <div style={{ maxWidth: "85%", padding: "12px 16px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#1a1a2e", border: m.role === "assistant" ? "1px solid #2d2d4e" : "none", fontSize: "13px", lineHeight: "1.6", color: "#e2e8f0", whiteSpace: "pre-wrap" }}>
+                  {m.images && m.images.length > 0 && (
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                      {m.images.map(img => (
+                        <img key={img.name} src={img.content} alt={img.name} style={{ width: "120px", height: "120px", objectFit: "cover", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)" }} />
+                      ))}
+                    </div>
+                  )}
                   {m.role === "assistant" && extractHTML(m.content) ? (
                     <div>
                       {stripHTMLBlock(m.content) && <p style={{ margin: "0 0 10px 0", whiteSpace: "pre-wrap" }}>{stripHTMLBlock(m.content)}</p>}
