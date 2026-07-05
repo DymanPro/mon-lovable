@@ -55,6 +55,7 @@ export default function App() {
   const [analyzingUrl, setAnalyzingUrl] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -246,6 +247,7 @@ GÉNÉRATION DE CODE :
     const text = customInput || input;
     if (!text.trim() || loading) return;
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     const attachmentNote = uploadedFiles.length > 0 ? '\n📎 ' + uploadedFiles.map(f => f.name).join(', ') : '';
     const urlNote = urlPageText ? '\n🔗 ' + (urlPageText.title || urlPageText.url) : '';
     const urlContext = urlPageText
@@ -561,7 +563,7 @@ GÉNÉRATION DE CODE :
             )}
             <div onDrop={handleDrop} onDragOver={handleDragOver} style={{ background: "#ffffff", borderRadius: "20px", padding: "10px 14px", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
               <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} style={{ display: "none" }} />
-              <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Écrire un message... (glisse un fichier ici)" rows={1} style={{ width: "100%", background: "transparent", border: "none", color: "#1a1a2e", fontSize: "14px", resize: "none", outline: "none", lineHeight: "1.5", marginBottom: "6px", fontFamily: "inherit" }} />
+              <textarea ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); const el = textareaRef.current; if (el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 160) + "px"; } }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Écrire un message... (glisse un fichier ici)" rows={1} style={{ width: "100%", background: "transparent", border: "none", color: "#1a1a2e", fontSize: "14px", resize: "none", outline: "none", lineHeight: "1.5", marginBottom: "6px", fontFamily: "inherit", maxHeight: "160px", overflowY: "auto" }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button onClick={() => fileInputRef.current?.click()} style={{ width: "30px", height: "30px", borderRadius: "50%", background: "none", border: "1px solid #d0d0d0", color: "#555", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: "1" }}>+</button>
