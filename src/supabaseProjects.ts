@@ -1,9 +1,9 @@
 import { supabase } from './supabase';
 
-export async function saveProjectToSupabase(project: { id: string; name: string; html: string; messages: any[] }) {
+export async function saveProjectToSupabase(project: { id: string; name: string; html: string; messages: any[]; slug?: string }) {
   const { error } = await supabase
     .from('projects')
-    .upsert({ id: parseInt(project.id), name: project.name, html: project.html, messages: project.messages });
+    .upsert({ id: parseInt(project.id), name: project.name, html: project.html, messages: project.messages, ...(project.slug ? { slug: project.slug } : {}) });
   if (error) console.error('Erreur sauvegarde:', error);
   else console.log('Projet sauvegardé !');
 }

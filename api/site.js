@@ -1,18 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  const { id } = req.query;
-  if (!id) {
+  const { id, slug } = req.query;
+  if (!id && !slug) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(400).send('<h1>Lien invalide</h1><p>Identifiant de site manquant.</p>');
   }
 
   const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
-  const { data, error } = await supabase
-    .from('projects')
-    .select('html, name')
-    .eq('id', parseInt(id))
-    .single();
+
+  let query = supabase.from('projects').select('html, name');
+  query = slug ? query.eq('slug', slug) : query.eq('id', parseInt(id));
+
+  const { data, error } = await query.single();
 
   if (error || !data || !data.html) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

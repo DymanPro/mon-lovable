@@ -16,6 +16,15 @@ const TEMPLATES = [
   { icon: "📅", name: "Calendrier", prompt: "Crée un calendrier interactif avec gestion d'événements et vue mensuelle" },
 ];
 
+function generateSlug(name: string, uniqueSuffix: string): string {
+  const base = name
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (base || "site") + "-" + uniqueSuffix.slice(-4);
+}
+
 function extractHTML(text: string): string | null {
   const match = text.match(/```html\n([\s\S]*?)```/);
   if (match) return match[1];
@@ -33,6 +42,7 @@ export default function App() {
   const [projectName, setProjectName] = useState("Nouveau projet");
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -311,13 +321,15 @@ GÉNÉRATION DE CODE :
         });
         setCurrentHTML(html); setPreview(html); setActiveTab("preview");
         const idToUse = currentProjectId || Date.now().toString();
+        const slugToUse = currentSlug || generateSlug(projectName, idToUse);
         if (!currentProjectId) setCurrentProjectId(idToUse);
+        if (!currentSlug) setCurrentSlug(slugToUse);
         const projectToSave: Project = { id: idToUse, name: projectName, html, messages: updatedMessages };
         setProjects(prev => {
           const exists = prev.some(p => p.id === idToUse);
           return exists ? prev.map(p => p.id === idToUse ? projectToSave : p) : [...prev, projectToSave];
         });
-        saveProjectToSupabase(projectToSave);
+        saveProjectToSupabase({ ...projectToSave, slug: slugToUse });
         saveVersionToSupabase(idToUse, html, updatedMessages);
       }
     } catch (e: any) {
@@ -330,23 +342,26 @@ GÉNÉRATION DE CODE :
 
   function saveProject() {
     const id = currentProjectId || Date.now().toString();
+    const slug = currentSlug || generateSlug(projectName, id);
     const project: Project = { id, name: projectName, html: currentHTML, messages };
     if (!currentProjectId) {
       setCurrentProjectId(id);
+      setCurrentSlug(slug);
       setProjects(prev => [...prev, project]);
     } else {
       setProjects(prev => prev.map(p => p.id === id ? project : p));
     }
-    saveProjectToSupabase(project);
+    saveProjectToSupabase({ ...project, slug });
     setShowMenu(false);
   }
 
-  function loadProject(p: Project) {
+  function loadProject(p: Project & { slug?: string }) {
     setProjectName(p.name);
     setMessages(p.messages);
     setCurrentHTML(p.html);
     setPreview(p.html);
     setCurrentProjectId(p.id);
+    setCurrentSlug(p.slug || null);
     setShowProjects(false);
   }
 
@@ -356,6 +371,7 @@ GÉNÉRATION DE CODE :
     setCurrentHTML("");
     setPreview("");
     setCurrentProjectId(null);
+    setCurrentSlug(null);
   }
 
   async function analyzeUrl() {
@@ -424,7 +440,7 @@ GÉNÉRATION DE CODE :
           <button onClick={async () => { const v = await loadVersionsFromSupabase(currentProjectId || ""); setVersions(v); setShowHistory(!showHistory); setShowMenu(false); setShowProjects(false); setShowTemplates(false); setShowFiles(false); }} disabled={!currentProjectId} style={{ padding: "8px 16px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "8px", color: currentProjectId ? "#a0aec0" : "#4a4a6a", cursor: currentProjectId ? "pointer" : "not-allowed", fontSize: "13px" }}>🕐 Historique</button>
           <button onClick={async () => {
             if (!currentProjectId) { alert("Génère d'abord une app avant de publier."); return; }
-            const link = window.location.origin + "/api/site?id=" + currentProjectId;
+            const link = window.location.origin + "/api/site?" + (currentSlug ? ("slug=" + currentSlug) : ("id=" + currentProjectId));
             try {
               await navigator.clipboard.writeText(link);
               alert("Lien copié !\n\n" + link);
