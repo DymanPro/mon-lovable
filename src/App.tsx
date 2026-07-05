@@ -33,7 +33,10 @@ function extractHTML(text: string): string | null {
 }
 
 function stripHTMLBlock(text: string): string {
-  return text.replace(/```html\n[\s\S]*?```/, "").trim();
+  const match = text.match(/```html\n[\s\S]*?```/);
+  if (match) return text.replace(match[0], "").trim();
+  if (text.includes("<!DOCTYPE html>") || text.trim().startsWith("<html")) return "";
+  return text.trim();
 }
 
 export default function App() {
