@@ -32,6 +32,10 @@ function extractHTML(text: string): string | null {
   return null;
 }
 
+function stripHTMLBlock(text: string): string {
+  return text.replace(/```html\n[\s\S]*?```/, "").trim();
+}
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -524,6 +528,7 @@ GÉNÉRATION DE CODE :
                 <div style={{ maxWidth: "85%", padding: "12px 16px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#1a1a2e", border: m.role === "assistant" ? "1px solid #2d2d4e" : "none", fontSize: "13px", lineHeight: "1.6", color: "#e2e8f0", whiteSpace: "pre-wrap" }}>
                   {m.role === "assistant" && extractHTML(m.content) ? (
                     <div>
+                      {stripHTMLBlock(m.content) && <p style={{ margin: "0 0 10px 0", whiteSpace: "pre-wrap" }}>{stripHTMLBlock(m.content)}</p>}
                       <span style={{ color: "#6366f1", fontWeight: "600" }}>✓ App générée !</span>
                       <button onClick={() => { setPreview(extractHTML(m.content)!); setActiveTab("preview"); }} style={{ display: "block", marginTop: "8px", padding: "6px 12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px" }}>Voir aperçu</button>
                     </div>
