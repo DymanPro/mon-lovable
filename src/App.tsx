@@ -548,10 +548,17 @@ GÉNÉRATION DE CODE :
             {(uploadedFiles.length > 0 || urlPageText) && (
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
                 {uploadedFiles.map(f => (
-                  <div key={f.name} style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
-                    📎 {f.name}
-                    <button onClick={() => removeFile(f.name)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px", padding: "0" }}>✕</button>
-                  </div>
+                  f.type.startsWith("image/") ? (
+                    <div key={f.name} style={{ position: "relative", width: "48px", height: "48px" }}>
+                      <img src={f.content} alt={f.name} title={f.name} style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid #2d2d4e" }} />
+                      <button onClick={() => removeFile(f.name)} style={{ position: "absolute", top: "-6px", right: "-6px", width: "18px", height: "18px", borderRadius: "50%", background: "#ef4444", border: "2px solid #0d0d1a", color: "white", cursor: "pointer", fontSize: "10px", lineHeight: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "0" }}>✕</button>
+                    </div>
+                  ) : (
+                    <div key={f.name} style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
+                      📎 {f.name}
+                      <button onClick={() => removeFile(f.name)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px", padding: "0" }}>✕</button>
+                    </div>
+                  )
                 ))}
                 {urlPageText && (
                   <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#1a1a2e", border: "1px solid #2d2d4e", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", color: "#a0aec0" }}>
