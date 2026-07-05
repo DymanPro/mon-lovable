@@ -140,6 +140,15 @@ RESPONSIVE ET ACCESSIBILITÉ (OBLIGATOIRE) :
 - Assure un bon contraste texte/fond pour la lisibilité
 - Tous les boutons et liens doivent être fonctionnels (pas de href="#" vide sans action)
 
+JEUX - NIVEAU AVANCÉ (quand l'utilisateur demande un jeu) :
+- Utilise <canvas> avec requestAnimationFrame pour une animation fluide (jamais setInterval pour l'animation)
+- Physique simple (gravité, rebonds, vitesse, collisions) : calcule-la toi-même en JavaScript avec des variables de vélocité/accélération
+- Physique complexe (jeu de plateforme avec plusieurs objets qui interagissent) : utilise la librairie Matter.js via CDN : https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js
+- Sons : génère des effets sonores synthétiques avec l'API Web Audio (AudioContext + OscillatorNode) pour les sauts, collisions, victoires, game over — jamais besoin de fichiers audio externes
+- Structure complète obligatoire : écran de démarrage avec bouton "Jouer", système de score visible en jeu, plusieurs niveaux avec difficulté progressive (vitesse ou obstacles qui augmentent), écran de game over avec le score final et un bouton "Rejouer"
+- Contrôles : clavier (flèches/espace) ET tactile (boutons ou swipe à l'écran pour mobile)
+- Sauvegarde le meilleur score (high score) dans le localStorage du navigateur et affiche-le
+
 APRÈS GÉNÉRATION :
 - Propose 3 améliorations sous forme de choix : "Tu veux que j'ajoute A, B ou C ?"
 
