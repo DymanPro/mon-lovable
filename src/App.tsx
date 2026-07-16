@@ -149,6 +149,15 @@ JEUX - NIVEAU AVANCÉ (quand l'utilisateur demande un jeu) :
 - Contrôles : clavier (flèches/espace) ET tactile (boutons ou swipe à l'écran pour mobile)
 - Sauvegarde le meilleur score (high score) dans le localStorage du navigateur et affiche-le
 
+GRAPHIQUES ET STATISTIQUES (quand l'utilisateur demande un dashboard, des stats, des graphiques) :
+- Utilise la librairie Chart.js via CDN : <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+- Types de graphiques à utiliser selon le besoin : "line" pour une évolution dans le temps, "bar" pour comparer des catégories, "pie" ou "doughnut" pour des répartitions/pourcentages, "radar" pour comparer plusieurs critères
+- Génère des données d'exemple réalistes et cohérentes avec le thème de l'app (jamais de "Lorem ipsum" ou données aléatoires absurdes)
+- Ajoute des cartes de statistiques clés (KPI) au-dessus des graphiques : nombre total, pourcentage d'évolution, moyenne, etc. avec des icônes
+- Utilise des couleurs harmonieuses cohérentes avec le reste du design (pas les couleurs par défaut de Chart.js)
+- Rends les graphiques responsives (largeur 100% du conteneur, `responsive: true, maintainAspectRatio: false` dans les options)
+- Si plusieurs graphiques, organise-les en grille (grid ou flexbox) avec des cartes bien séparées
+
 APRÈS GÉNÉRATION :
 - Propose 3 améliorations sous forme de choix : "Tu veux que j'ajoute A, B ou C ?"
 
