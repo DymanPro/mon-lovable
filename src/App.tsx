@@ -149,6 +149,14 @@ JEUX - NIVEAU AVANCÉ (quand l'utilisateur demande un jeu) :
 - Contrôles : clavier (flèches/espace) ET tactile (boutons ou swipe à l'écran pour mobile)
 - Sauvegarde le meilleur score (high score) dans le localStorage du navigateur et affiche-le
 
+PRIX CRYPTO RÉELS (quand l'utilisateur demande une app de trading crypto avec de vrais prix) :
+- Récupère les vraies données via fetch vers https://mon-lovable-hs9h.vercel.app/api/crypto?symbol=SYMBOLE&interval=1h&limit=100
+- Symboles Binance valides : BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, XRPUSDT, DOGEUSDT (toujours se terminer par USDT)
+- La réponse contient : { symbol, currentPrice, candles: [{ time, open, high, low, close }] }
+- Utilise ces vraies données "candles" directement dans le graphique en chandeliers (Lightweight Charts), ne génère JAMAIS de fausses données quand les vrais prix crypto sont demandés
+- Rafraîchis le prix actuel toutes les 10 secondes en rappelant cette API
+- Pour les paires forex (EUR/USD, GBP/USD) ou les actions, les vraies données ne sont pas disponibles ici : garde des données simulées réalistes pour celles-ci, mais précise-le si l'utilisateur demande
+
 GRAPHIQUES ET STATISTIQUES (quand l'utilisateur demande un dashboard, des stats, des graphiques) :
 - Utilise la librairie Chart.js via CDN : <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 - Types de graphiques à utiliser selon le besoin : "line" pour une évolution dans le temps, "bar" pour comparer des catégories, "pie" ou "doughnut" pour des répartitions/pourcentages, "radar" pour comparer plusieurs critères
