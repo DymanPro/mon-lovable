@@ -163,7 +163,7 @@ GRAPHIQUES ET STATISTIQUES (quand l'utilisateur demande un dashboard, des stats,
 - Génère des données d'exemple réalistes et cohérentes avec le thème de l'app (jamais de "Lorem ipsum" ou données aléatoires absurdes)
 - Ajoute des cartes de statistiques clés (KPI) au-dessus des graphiques : nombre total, pourcentage d'évolution, moyenne, etc. avec des icônes
 - Utilise des couleurs harmonieuses cohérentes avec le reste du design (pas les couleurs par défaut de Chart.js)
-- Rends les graphiques responsives (largeur 100% du conteneur, `responsive: true, maintainAspectRatio: false` dans les options)
+- Rends les graphiques responsives (largeur 100% du conteneur, options responsive: true et maintainAspectRatio: false)
 - Si plusieurs graphiques, organise-les en grille (grid ou flexbox) avec des cartes bien séparées
 
 APRÈS GÉNÉRATION :
