@@ -150,7 +150,7 @@ JEUX - NIVEAU AVANCÉ (quand l'utilisateur demande un jeu) :
 - Sauvegarde le meilleur score (high score) dans le localStorage du navigateur et affiche-le
 
 PRIX CRYPTO RÉELS (quand l'utilisateur demande une app de trading crypto avec de vrais prix) :
-- Récupère les vraies données via fetch vers https://mon-lovable-hs9h.vercel.app/api/crypto?symbol=SYMBOLE&interval=1h&limit=100
+- Récupère les vraies données via fetch vers https://mon-lovable-hs9h.vercel.app/api/crypto?symbol=SYMBOLE&days=7
 - Symboles Binance valides : BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, XRPUSDT, DOGEUSDT (toujours se terminer par USDT)
 - La réponse contient : { symbol, currentPrice, candles: [{ time, open, high, low, close }] }
 - Utilise ces vraies données "candles" directement dans le graphique en chandeliers (Lightweight Charts), ne génère JAMAIS de fausses données quand les vrais prix crypto sont demandés
