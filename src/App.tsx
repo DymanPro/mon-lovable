@@ -26,16 +26,22 @@ function generateSlug(name: string, uniqueSuffix: string): string {
 }
 
 function extractHTML(text: string): string | null {
-  const match = text.match(/```html\n([\s\S]*?)```/);
-  if (match) return match[1];
-  if (text.includes("<!DOCTYPE html>") || text.includes("<html")) return text;
+  const match = text.match(/```html\s*\n([\s\S]*?)```/i);
+  if (match) return match[1].trim();
+  const doctypeIdx = text.indexOf("<!DOCTYPE html>");
+  if (doctypeIdx !== -1) return text.slice(doctypeIdx).replace(/```\s*$/, "").trim();
+  const htmlIdx = text.indexOf("<html");
+  if (htmlIdx !== -1) return text.slice(htmlIdx).replace(/```\s*$/, "").trim();
   return null;
 }
 
 function stripHTMLBlock(text: string): string {
-  const match = text.match(/```html\n[\s\S]*?```/);
+  const match = text.match(/```html\s*\n[\s\S]*?```/i);
   if (match) return text.replace(match[0], "").trim();
-  if (text.includes("<!DOCTYPE html>") || text.trim().startsWith("<html")) return "";
+  const doctypeIdx = text.indexOf("<!DOCTYPE html>");
+  if (doctypeIdx !== -1) return text.slice(0, doctypeIdx).trim();
+  const htmlIdx = text.indexOf("<html");
+  if (htmlIdx !== -1) return text.slice(0, htmlIdx).trim();
   return text.trim();
 }
 
